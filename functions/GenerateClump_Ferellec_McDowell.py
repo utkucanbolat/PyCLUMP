@@ -2,6 +2,7 @@ import numpy as np
 import functions.utils.PatchNormals as PatchNormals
 import functions.utils.RigidBodyParameters as RigidBodyParameters
 import functions.utils.STLReader as STLReader
+from functions.utils.ClumpPlotter import clump_plotter
 
 """
 Implementation of the clump-generation concept proposed by Ferellec and McDowell (2010) [1]
@@ -43,9 +44,9 @@ class Clump:
         self.numSpheres = None
 
 
-def GenerateClump_Ferellec_McDowell(stlFile: str, dmin: float, rmin: float, rstep: float, pmax: float, **kwargs):
+def GenerateClump_Ferellec_McDowell(inputGeom: str, dmin: float, rmin: float, rstep: float, pmax: float, **kwargs):
     """
-    :param stlFile: Directory of stl file, used to generate spheres
+    :param inputGeom: Directory of stl file, used to generate spheres
     :param dmin: Minimum allowed distance between new vertex of the surface mesh and existing spheres. If left zero, this distance is not cheched.
     :param rmin: Minimum radius of sphere to be generated. For coarse meshes, the actual minimum radius might be >rmin.
     :param rstep: Step used to increase the radius in each iteration, until the generated sphere meets another point of the particle.
@@ -80,7 +81,7 @@ def GenerateClump_Ferellec_McDowell(stlFile: str, dmin: float, rmin: float, rste
 
     clump = Clump()  # instentiate Clump object for later use
 
-    F, P = STLReader.read_stl(stlFile)  # read the STL file and get faces and vertices
+    F, P = STLReader.read_stl(inputGeom)  # read the STL file and get faces and vertices
 
     # Build "mesh" structure
     mesh = RigidBodyParameters.RBP(F, P)  # calculate the rigid body parameters based on F and P.
@@ -174,6 +175,10 @@ def GenerateClump_Ferellec_McDowell(stlFile: str, dmin: float, rmin: float, rste
     clump.minRadius = np.min(clump.radii)
     clump.maxRadius = np.max(clump.radii)
     clump.numSpheres = len(clump.radii)
+
+    visualise = kwargs.get('visualise')
+    if visualise is not None:
+        clump_plotter(P, F, clump)
 
     output = kwargs.get('output')
     if output is not None:

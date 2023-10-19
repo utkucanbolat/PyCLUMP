@@ -1,12 +1,12 @@
 from functions.GenerateClump_Ferellec_McDowell import GenerateClump_Ferellec_McDowell
 
-inputGeom = 'ParticleGeometries/Torus.stl'
+inputGeom = 'ParticleGeometries/Ellipsoid_R_2.0_1.0_0.5.stl'
 dmin = 0.1
 rmin = 0.01
 rstep = 0.01
 pmax = 1.0
 seed = 5
 output = 'FM_torus.txt'
-# visualise=true;
+visualise = True
 
-GenerateClump_Ferellec_McDowell(stlFile=inputGeom, dmin=dmin, rmin=rmin, rstep=rstep, pmax=pmax, seed=seed, output=output)
+GenerateClump_Ferellec_McDowell(inputGeom=inputGeom, dmin=dmin, rmin=rmin, rstep=rstep, pmax=pmax, seed=seed, output=output, visualise=visualise)

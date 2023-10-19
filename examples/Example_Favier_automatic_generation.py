@@ -4,6 +4,6 @@ inputGeom = 'ParticleGeometries/Ellipsoid_R_2.0_1.0_1.0.stl'
 N = 10
 chooseDistance = 'min'
 output = 'FA_Ellipsoid_2.0_1.0_1.0.txt'
-# visualise=true
+visualise = True
 
-GenerateClump_Favier(inputGeom=inputGeom, N=N, chooseDistance=chooseDistance, output=output)
+GenerateClump_Favier(inputGeom=inputGeom, N=N, chooseDistance=chooseDistance, output=output, visualise=visualise)

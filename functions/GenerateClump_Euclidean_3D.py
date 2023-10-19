@@ -1,6 +1,7 @@
 import numpy as np
 import trimesh
 from scipy.ndimage import distance_transform_edt
+from functions.utils.ClumpPlotter import clump_plotter
 
 
 """
@@ -136,5 +137,9 @@ def GenerateClump_Euclidean_3D(inputGeom, N, rMin, div, overlap, **kwargs):
     if output is not None:
         np.savetxt(output, np.asarray(np.hstack((clump.positions, clump.radii))),
                    delimiter=",")  # In PyCharm this line seems to have an error but it does not. Known issue.
+
+    visualise = kwargs.get('visualise')
+    if visualise is not None:
+        clump_plotter(P, F, clump)
 
     return mesh, clump

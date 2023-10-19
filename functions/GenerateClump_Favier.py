@@ -1,6 +1,7 @@
 import numpy as np
 import functions.utils.RigidBodyParameters as RigidBodyParameters
 import functions.utils.STLReader as STLReader
+from functions.utils.ClumpPlotter import clump_plotter
 
 """
 Implementation of the clump-generation concept proposed by Favier et al. (1999) [1]
@@ -159,9 +160,15 @@ def GenerateClump_Favier(inputGeom, N, **kwargs):
     clump.maxRadius = np.max(clump.radii)
     clump.numSpheres = len(clump.radii)
 
+    visualise = kwargs.get('visualise')
+    if visualise is not None:
+        clump_plotter(P, F, clump)
+
     output = kwargs.get('output')
     if output is not None:
         np.savetxt(output, np.asarray(np.hstack((clump.positions, clump.radii))),
                    delimiter=",")  # In PyCharm this line seems to have an error but it does not. Known issue.
 
+
     return mesh, clump
+
