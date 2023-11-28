@@ -4,3 +4,17 @@ Python translation of the code CLUMP (ref: Angelidakis, V., Nadimi, S., Otsubo, 
 
 
 Detailed README will be added soon.
+
+##################################
+
+Dependency list:
+
+numpy
+scipy
+trimesh
+numpy-stl
+matplotlib
+pyvista
+os
+time
+
