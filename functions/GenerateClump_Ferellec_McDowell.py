@@ -2,7 +2,8 @@ import numpy as np
 import functions.utils.PatchNormals as PatchNormals
 import functions.utils.RigidBodyParameters as RigidBodyParameters
 import functions.utils.STLReader as STLReader
-from functions.utils.ClumpPlotter import clump_plotter
+from functions.utils.ClumpPlotter import clump_plotter_pyvista
+from functions.utils.VTK_writer import clump_to_VTK
 
 """
 Implementation of the clump-generation concept proposed by Ferellec and McDowell (2010) [1]
@@ -178,7 +179,11 @@ def GenerateClump_Ferellec_McDowell(inputGeom: str, dmin: float, rmin: float, rs
 
     visualise = kwargs.get('visualise')
     if visualise is not None:
-        clump_plotter(P, F, clump)
+        clump_plotter_pyvista(clump)
+
+    VTK = kwargs.get('VTK')
+    if VTK is not None:
+        clump_to_VTK(clump)
 
     output = kwargs.get('output')
     if output is not None:

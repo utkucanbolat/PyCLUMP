@@ -1,7 +1,8 @@
 import numpy as np
 import functions.utils.RigidBodyParameters as RigidBodyParameters
 import functions.utils.STLReader as STLReader
-from functions.utils.ClumpPlotter import clump_plotter
+from functions.utils.ClumpPlotter import clump_plotter_pyvista
+from functions.utils.VTK_writer import clump_to_VTK
 
 """
 Implementation of the clump-generation concept proposed by Favier et al. (1999) [1]
@@ -14,7 +15,8 @@ The main concept of this methodology:
 2. If a voxelated image is given, we transform it into a surface mesh, providing its vertices and faces (vertex connectivity).
 3. We calculate the inertial characteristics of the particle and center it to its centroid and align it to its principal axes.
 4. We create a number of N points along the longest particle axis and identify the particle vertices belonging to each of the newly formed (N+1) spans.
-5. We generate a sphere centered to each of the N points. The radius of each sphere is calculated based on the distances of the vertices within the span of interest. 
+5. We generate a sphere centered to each of the N points. The radius of each sphere is calculated based on the distances of the vertices within the span of 
+interest. 
 The default behaviour considers the minimum distance, although an optional parameter (varargin) exists that takes the values 'min' (default), 'avg' and 'max'.
 """
 
@@ -162,13 +164,15 @@ def GenerateClump_Favier(inputGeom, N, **kwargs):
 
     visualise = kwargs.get('visualise')
     if visualise is not None:
-        clump_plotter(P, F, clump)
+        clump_plotter_pyvista(clump)
+
+    VTK = kwargs.get('VTK')
+    if VTK is not None:
+        clump_to_VTK(clump)
 
     output = kwargs.get('output')
     if output is not None:
         np.savetxt(output, np.asarray(np.hstack((clump.positions, clump.radii))),
                    delimiter=",")  # In PyCharm this line seems to have an error but it does not. Known issue.
 
-
     return mesh, clump
-

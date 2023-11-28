@@ -1,8 +1,10 @@
 import numpy as np
 import trimesh
 from scipy.ndimage import distance_transform_edt
-from functions.utils.ClumpPlotter import clump_plotter
-
+from functions.utils.ClumpPlotter import clump_plotter_pyvista
+from scipy.io import loadmat
+from functions.utils import RigidBodyParameters
+from functions.utils.VTK_writer import clump_to_VTK
 
 """
 Clump generator using the Euclidean map for voxelated, 3D particles 
@@ -62,41 +64,86 @@ def GenerateClump_Euclidean_3D(inputGeom, N, rMin, div, overlap, **kwargs):
             output: txt file with centroids and radii, with format: [x,y,z,r]
     """
 
+    if isinstance(inputGeom, str):
+        if inputGeom.endswith(".stl"):
+            mesh = trimesh.load_mesh(inputGeom)  # this will be used for voxalization
+            F = mesh.faces
+            P = mesh.vertices
+
+            # Calculate extreme coordinates & centroid of the AABB of the particle
+            minX, minY, minZ = np.min(P[:, 0]), np.min(P[:, 1]), np.min(P[:, 2])
+            maxX, maxY, maxZ = np.max(P[:, 0]), np.max(P[:, 1]), np.max(P[:, 2])
+            aveX, aveY, aveZ = np.mean((minX, maxX)), np.mean((minY, maxY)), np.mean((minZ, maxZ))
+
+            # Center the particle to the centroid of its AABB
+            P[:, 0] -= aveX
+            P[:, 1] -= aveY
+            P[:, 2] -= aveZ
+
+            # Voxalization
+            min_AABB = np.min(
+                (np.abs(maxX - minX), np.abs(maxY - minY), np.abs(maxZ - minZ)))  # find the shortest length of axes
+            voxel_size = min_AABB / div  # determine the voxel size
+
+            img_temp = mesh.voxelized(pitch=voxel_size, method="subdivide").fill()  # voxalize
+
+            intersection = np.pad(np.array(img_temp.matrix), ((2, 2), (2, 2), (2, 2)), mode='constant')  # pad the array with 2 voxels
+
+            # I skipped the part "Ensure the voxel size is the same in all 3 directions -> Might be an overkill, but still".
+            # Maybe add it later - Utku
+
+        elif inputGeom.endswith(".mat"):
+
+            # Load the .mat file
+            data = loadmat(inputGeom)
+            vox_keys = list(data.keys())
+
+            # MATLAB's load function sometimes loads additional meta information starting with '__'
+            # So, let's filter out such keys
+            vox_keys = [key for key in vox_keys if not key.startswith('__')]
+
+            vox = data[vox_keys[0]]
+
+            img = vox['img'][0][0]
+            voxel_size = vox['voxel_size'][0][0]
+
+            opt = 2  # see vol2mesh function in iso2mesh
+            isovalues = []  # see vol2mesh function in iso2mesh
+
+            # Convert voxel data to a mesh using trimesh
+            vox_mesh = trimesh.voxel.Voxel(img).as_mesh()
+            P = vox_mesh.vertices
+            F = vox_mesh.faces
+
+            P = P * voxel_size[0][0]
+
+            # Create a structure equivalent in Python
+            FV = {'vertices': P, 'faces': F}
+
+            RBP, _ = RigidBodyParameters.RBP(FV)
+        else:
+            raise ValueError("Not recognised inputGeom format.")
+    elif isinstance(type(inputGeom), type):  # check if it is a class ("struct").
+        try:
+            P = inputGeom.Vertices
+        except AttributeError:
+            P = inputGeom.vertices
+
+        try:
+            F = inputGeom.Faces
+        except AttributeError:
+            F = inputGeom.faces
+
+        RBP, _ = RigidBodyParameters.RBP(F, P)
+
+    else:
+        raise ValueError("Not recognised inputGeom format.")
+
     ################################################################################################
     #                                   Main Body of the Function                                  #
     ################################################################################################
 
     clump = Clump()  # instentiate Clump object for later use
-
-    # F, P = STLReader.read_stl(stlFile)  # read the STL file and get faces and vertices
-    # Build "mesh" structure
-    # mesh = RigidBodyParameters.RBP(F, P)  # calculate the rigid body parameters based on F and P.
-
-    mesh = trimesh.load_mesh(inputGeom)  # this will be used for voxalization
-    F = mesh.faces
-    P = mesh.vertices
-
-    # Calculate extreme coordinates & centroid of the AABB of the particle
-    minX, minY, minZ = np.min(P[:, 0]), np.min(P[:, 1]), np.min(P[:, 2])
-    maxX, maxY, maxZ = np.max(P[:, 0]), np.max(P[:, 1]), np.max(P[:, 2])
-    aveX, aveY, aveZ = np.mean((minX, maxX)), np.mean((minY, maxY)), np.mean((minZ, maxZ))
-
-    # Center the particle to the centroid of its AABB
-    P[:, 0] -= aveX
-    P[:, 1] -= aveY
-    P[:, 2] -= aveZ
-
-    # Voxalization
-    min_AABB = np.min(
-        (np.abs(maxX - minX), np.abs(maxY - minY), np.abs(maxZ - minZ)))  # find the shortest length of axes
-    voxel_size = min_AABB / div  # determine the voxel size
-
-    img_temp = mesh.voxelized(pitch=voxel_size, method="subdivide").fill()  # voxalize
-
-    intersection = np.pad(np.array(img_temp.matrix), ((2, 2), (2, 2), (2, 2)), mode='constant')  # pad the array with 2 voxels
-
-    # I skipped the part "Ensure the voxel size is the same in all 3 directions -> Might be an overkill, but still".
-    # Maybe add it later - Utku
 
     # Dimensions of the new image
     halfSize = np.array(intersection.shape) / 2
@@ -138,8 +185,12 @@ def GenerateClump_Euclidean_3D(inputGeom, N, rMin, div, overlap, **kwargs):
         np.savetxt(output, np.asarray(np.hstack((clump.positions, clump.radii))),
                    delimiter=",")  # In PyCharm this line seems to have an error but it does not. Known issue.
 
+    VTK = kwargs.get('VTK')
+    if VTK is not None:
+        clump_to_VTK(clump, filepath=output)
+
     visualise = kwargs.get('visualise')
     if visualise is not None:
-        clump_plotter(P, F, clump)
+        clump_plotter_pyvista(clump)
 
     return mesh, clump
