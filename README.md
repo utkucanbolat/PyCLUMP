@@ -9,12 +9,19 @@ Detailed README will be added soon.
 
 Dependency list:
 
-numpy\n
-scipy\n
-trimesh\n
-numpy-stl\n
-matplotlib\n
-pyvista\n
-os\n
+numpy
+
+scipy
+
+trimesh
+
+numpy-stl
+
+matplotlib
+
+pyvista
+
+os
+
 time
 
